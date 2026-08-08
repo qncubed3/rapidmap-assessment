@@ -44,19 +44,6 @@ class HelmertParams:
     dsc: float = 0.0
 
 
-GDA94_TO_GDA2020 = HelmertParams(
-    tx=0.06155,
-    ty=-0.01087,
-    tz=-0.04019,
-
-    rx=-0.0394924,
-    ry=-0.0327221,
-    rz=-0.0328979,
-
-    sc=-0.009994,
-)
-
-
 def helmert14(
     XYZ: np.ndarray,
     params: HelmertParams,
@@ -136,16 +123,36 @@ def helmert7(
 
 
 if __name__ == "__main__":
+    from src.parameters import GDA94_TO_GDA2020, ITRF2020_TO_GDA2020, ITRF2014_TO_GDA2020
 
-    XYZ = np.array([
+    # Section 3.1.1: GDA94 -> GDA2020, Alice Springs (ALIC)
+    # Expected: [-4052052.7379, 4212835.9897, -2545104.5898]
+    XYZ_gda94_alic = np.array([
         -4052051.7643,
          4212836.2017,
-        -2545106.0245
+        -2545106.0245,
     ])
+    # print("3.1.1 GDA94 -> GDA2020 (Alice Springs):")
+    # print(helmert7(XYZ_gda94_alic, GDA94_TO_GDA2020))
 
-    print(
-        helmert7(
-            XYZ,
-            GDA94_TO_GDA2020
-        )
-    )
+    # Section 3.3.1: ATRF2014/ITRF2014 -> GDA2020 at epoch 2018.0, Alice Springs (ALIC)
+    # Expected: [-4052052.7373, 4212835.9835, -2545104.5867]
+    XYZ_itrf2014_alic = np.array([
+        -4052052.6588,
+         4212835.9938,
+        -2545104.6946,
+    ])
+    # print("\n3.3.1 ITRF2014 -> GDA2020 (Alice Springs, t=2018.0):")
+    # print(helmert14(XYZ_itrf2014_alic, ITRF2014_TO_GDA2020, t=2018.0, t0=2020.0))
+
+    # Section 3.5.1: WGS 84 (G2296) -> GDA2020, Melbourne (MOBS)
+    # WGS 84 obs on 14 Feb 2024 => coincident with ITRF2020 at mid-year 2024 => t = 2024.5
+    # Expected: [-4130636.759, 2894953.142, -3890530.249]
+    XYZ_itrf2020_mobs = np.array([
+        -4130636.582,
+         2894953.120,
+        -3890530.446,
+    ])
+    print("\n3.5.1 WGS84(G2296)/ITRF2020 -> GDA2020 (Melbourne, t=2024.5):")
+    print(helmert14(XYZ_itrf2020_mobs, ITRF2020_TO_GDA2020, t=2024.5, t0=2020.0))
+
