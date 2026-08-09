@@ -26,3 +26,22 @@ build/
 # IDE
 .vscode/
 .idea/
+
+# Task 2 — compiled binaries
+task2/*.exe
+task2/**/*.exe
+
+# Task 2 — generated vector datasets (re-run generate_*)
+task2/*.pts
+task2/*.lns
+task2/*.pol
+
+# Task 2 — raster / image outputs
+task2/*.pgm
+task2/*.grid
+task2/*.png
+
+# Task 2 — CSV dumps from print_* (keep clusters.csv)
+task2/points.csv
+task2/lines.csv
+task2/polys.csv
