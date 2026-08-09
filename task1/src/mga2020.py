@@ -1,6 +1,7 @@
 """
-Geographic to MGA2020 grid coordinate conversion using the Krueger n-series
-(transverse Mercator) equations.
+Conversion between GDA2020 geographic coordinates (lat/lon) and MGA2020 grid
+coordinates (easting/northing) using the Krueger n-series (transverse Mercator)
+equations.  Both representations are in the GDA2020 datum; only the format changes.
 
 Source: GDA2020 Technical Manual v1.8
   - Section 4.1.1.1  Forward transformation (geographic -> grid), Equations 19-33

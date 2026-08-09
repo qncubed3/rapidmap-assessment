@@ -2,7 +2,7 @@
 Conversions between geocentric Cartesian (X, Y, Z) and geodetic geographic
 (latitude, longitude, ellipsoidal height) coordinates.
 
-Equations follow the GDA2020 Technical Manual v1.8, Section 2.1.2.
+Equations follow the GDA2020 Technical Manual v1.8, Section 2.1.2, equations 1-13.
 """
 
 import numpy as np
@@ -17,7 +17,7 @@ def cartesian_to_geographic(
     """
     Convert geocentric Cartesian coordinates to geodetic geographic coordinates.
 
-    Uses the Bowring parametric latitude method (Equations 1–7).
+    Uses the Bowring parametric latitude method, equations 1-7, page 24
 
     Parameters:
         XYZ: np.ndarray
@@ -68,13 +68,13 @@ def geographic_to_cartesian(
     """
     Convert geodetic geographic coordinates to geocentric Cartesian coordinates.
 
-    Uses Equations 8-12 from the GDA2020 Technical Manual v1.8.
+    Uses Equations 8-12, page 25.
 
     Parameters:
-        lat_deg: float  Geodetic latitude in degrees (positive north).
-        lon_deg: float  Geodetic longitude in degrees (positive east).
-        h: float        Ellipsoidal height in metres.
-        ellipsoid: Ellipsoid  Reference ellipsoid (default GRS80).
+        lat_deg: float          Geodetic latitude in degrees (positive north).
+        lon_deg: float          Geodetic longitude in degrees (positive east).
+        h: float                Ellipsoidal height in metres.
+        ellipsoid: Ellipsoid    Reference ellipsoid (default GRS80).
 
     Returns:
         np.ndarray  [X, Y, Z] geocentric Cartesian coordinates in metres.

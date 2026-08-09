@@ -1,3 +1,12 @@
+"""
+Tests for Helmert coordinate transformations.
+
+Verification data taken from the GDA2020 Technical Manual v1.8:
+  - Section 3.1.1, Example: GDA94 -> GDA2020, Alice Springs (ALIC)
+  - Section 3.3.1, Example: ITRF2014 -> GDA2020, Alice Springs at epoch 2018.0
+  - Section 3.5.1, Example: ITRF2020/WGS84 -> GDA2020, Melbourne (MOBS) at epoch 2024.5
+"""
+
 import pytest
 
 from src.helmert import helmert7, helmert14
