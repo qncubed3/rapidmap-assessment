@@ -60,3 +60,27 @@ class Test_ITRF2020_to_GDA2020:
     def test_helmert14_at_2024_5(self):
         result = helmert14(self.XYZ_itrf2020, ITRF2020_TO_GDA2020, t=2024.5, t0=2020.0)
         assert result == pytest.approx(self.XYZ_gda2020_expected, abs=1e-3)
+
+    def test_pyproj_explicit_pipeline_matches_manual(self):
+        """
+        pyproj reproduces §3.5.1 when given an explicit 14-param Helmert
+        (same parameters / convention as our implementation).
+        Naive EPSG:10604→7842 does not — that path is static/noop.
+        """
+        from pyproj import Transformer
+
+        p = ITRF2020_TO_GDA2020
+        pipeline = (
+            f"+proj=helmert +x={p.tx} +y={p.ty} +z={p.tz} "
+            f"+rx={p.rx} +ry={p.ry} +rz={p.rz} +s={p.sc} "
+            f"+dx={p.dtx} +dy={p.dty} +dz={p.dtz} "
+            f"+drx={p.drx} +dry={p.dry} +drz={p.drz} +ds={p.dsc} "
+            f"+t_epoch=2020 +convention=coordinate_frame"
+        )
+        x, y, z, _ = Transformer.from_pipeline(pipeline).transform(
+            *self.XYZ_itrf2020, 2024.5
+        )
+        assert (x, y, z) == pytest.approx(self.XYZ_gda2020_expected, abs=1e-3)
+
+        ours = helmert14(self.XYZ_itrf2020, ITRF2020_TO_GDA2020, t=2024.5, t0=2020.0)
+        assert (x, y, z) == pytest.approx(ours, abs=1e-6)

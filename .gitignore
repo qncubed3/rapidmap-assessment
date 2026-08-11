@@ -27,21 +27,27 @@ build/
 .vscode/
 .idea/
 
-# Task 2 — compiled binaries
-task2/*.exe
+# ----- Task 2 -----
+# Compiled binaries
 task2/**/*.exe
 
-# Task 2 — generated vector datasets (re-run generate_*)
-task2/*.pts
-task2/*.lns
-task2/*.pol
+# Generated binary datasets (recreated by the pipeline)
+task2/**/*.pts
+task2/**/*.lns
+task2/**/*.pol
 
-# Task 2 — raster / image outputs
-task2/*.pgm
-task2/*.grid
-task2/*.png
+# Raster / image outputs (recreated by the pipeline)
+task2/**/*.png
+task2/**/*.pgm
+task2/**/*.grid
 
-# Task 2 — CSV dumps from print_* (keep clusters.csv)
-task2/points.csv
-task2/lines.csv
-task2/polys.csv
+# Print dumps (keep clusters.csv)
+task2/points/points.csv
+task2/lines/lines.csv
+task2/polygons/polys.csv
+
+# Early prototype (local only; organised C tree under points/lines/polygons is the deliverable)
+task2/initial_trial/
+
+# Jupyter checkpoint noise
+task2/.ipynb_checkpoints/

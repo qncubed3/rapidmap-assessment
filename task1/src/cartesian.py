@@ -1,5 +1,6 @@
 """
-Conversions between geocentric Cartesian (X, Y, Z) and geodetic geographic
+This module provides the functions to conversions between geocentric Cartesian (X, Y, Z) 
+and geodetic geographic (latitude, longitude, ellipsoidal height) coordinates.
 (latitude, longitude, ellipsoidal height) coordinates.
 
 Equations follow the GDA2020 Technical Manual v1.8, Section 2.1.2, equations 1-13.
