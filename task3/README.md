@@ -1,4 +1,5 @@
 # Task 3 — Object detection from a dataset you built yourself
+## [Web Demo](https://yolo-street-sign.streamlit.app/)
 
 In this task, we will train a model to detect street signs from dashcam footage. More specfically, our model will attempt to identify different classes of common signs, which are:
 
@@ -74,7 +75,7 @@ Stop reports high metrics, but is unreliable as only one instance is in the vali
 
 ## Demo
 
-Streamlit app (`app.py`) for live demo at the debrief: upload or use sample images/videos and run the trained model with a confidence slider.
+[Web Demo](https://yolo-street-sign.streamlit.app/) Streamlit app (`app.py`) for live demo at the debrief: upload or use sample images/videos and run the trained model with a confidence slider.
 
 ```powershell
 cd task3

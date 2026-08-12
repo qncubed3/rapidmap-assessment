@@ -5,9 +5,10 @@ Technical assessment for [RapidMap](https://www.rapidmap.com/). The code for eac
 ## Tasks
 
 - [Task 1 — Coordinate transformation](task1/README.md)
-  - [Web Demo](https://wgs84-mga2020.streamlit.app/).
+  - [Web Demo](https://wgs84-mga2020.streamlit.app/)
 - [Task 2 — Rasterisation at scale](task2/README.md)
 - [Task 3 — Object detection](task3/README.md)
+  - [Web Demo](https://yolo-street-sign.streamlit.app/)
 
 ## Timelog
 
