@@ -15,7 +15,7 @@ from .parameters import ITRF2020_TO_GDA2020
 _T0 = 2020.0
 
 
-def wgs84_to_mga2020(lat_deg, lon_deg, epoch=2020.0, zone=55):
+def wgs84_to_mga2020(lat_deg, lon_deg, epoch=2020, zone=55):
     """
     Convert WGS84 geographic coordinates to MGA2020 grid coordinates.
 
@@ -85,4 +85,18 @@ def _negate(params):
     )
 
 
+if __name__ == "__main__":
+    # Flinders Peak MGA2020 Zone 55 (Table C-1)
+    EASTING = 273741.297
+    NORTHING = 5796489.777
 
+    lat, lon = mga2020_to_wgs84(EASTING, NORTHING)
+    print(lat, lon)
+
+    from pyproj import Transformer
+    from .utils import distance_metres_geographic
+
+    transformer = Transformer.from_crs("EPSG:7855", "EPSG:10606", always_xy=True)
+    lon_pyproj, lat_pyproj = transformer.transform(EASTING, NORTHING)
+    print(lat_pyproj, lon_pyproj)
+    print(distance_metres_geographic(lat, lon, lat_pyproj, lon_pyproj))
