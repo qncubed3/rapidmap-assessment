@@ -63,7 +63,5 @@ WGS84 and MGA2020 are not the same kind of thing: MGA2020 is a projected CRS on 
 
 A Helmert transformtion converts geocentric Cartesian coordinates (X, Y, Z) from one terrestrial reference frame to another and will be used as the bridge between WGS 84 (G2296) and GDA2020. This is implemented in `helmert.py` and is described in Equation 17 on page 27. We will also need to convert between geographical coordinates (lat, lon, height) to cartesian coordinates. The equations can be found on page 24-25, and we implement these in `cartesian.py`. 
 
-In Table 3.5 of the GDA Technical Manual, we have the 14 parameters to transform from ITRF202 to GDA2020. We will treat WGS 84 (G2296) as coincident with ITRF2020, as mentioned in Section 3.5, however this is only at the centimeter level. Therefore, we may expect a few mm different between our implementation, and a true transformation from WGS84 (G2296).
-
-
+In Table 3.5 of the GDA Technical Manual, we have the 14 parameters to transform from ITRF202 to GDA2020. We will treat WGS 84 (G2296) as coincident with ITRF2020, as mentioned in Section 3.5, however this is only at the centimeter level as noted. Therefore, we may expect a few mm different between our implementation, and a true transformation from WGS84 (G2296).
 

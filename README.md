@@ -1,13 +1,10 @@
-# Read Me
+# RapidMap Assessment
 
-http://geodesyapps.ga.gov.au/grid-to-geographic
+Technical assessment for [RapidMap](https://www.rapidmap.com/).
 
-keeping track of epsg codes:
+## Tasks
 
-GDA2020 cart: 7842
-GDA2020 geo3d: 7843
-GDA2020 geo2d: 7844
-MGA2020 Zone 55: 7855
-GDA94 cart: 4938
-GDA94 geo3d: 4939
-WGS 84 (G2996) 3d cart: 10604
+- [Task 1 — Coordinate transformation](task1/README.md)
+- [Task 2 — Rasterisation at scale](task2/README.md)
+- [Task 3 — Object detection](task3/README.md)
+
