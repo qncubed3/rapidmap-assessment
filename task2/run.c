@@ -28,7 +28,7 @@
 #define DEFAULT_SEED 42
 #define DEFAULT_CLUSTERS "clusters.csv"
 #define OUTPUT_DIR "outputs"
-#define PERF_LOG_PATH "outputs/performance_log.csv"
+#define PERF_LOG_PATH "performance_log.csv"
 
 /* Entry point: generate, rasterise, and encode PNG */
 
@@ -40,8 +40,10 @@ static void print_help(void) {
     printf("  --print N     dump first N features to CSV\n");
     printf("  --compact     two-stage sampling: cluster -> local centre\n");
     printf("                -> tight vertices (shorter lines / smaller polys)\n");
+    printf("  --optimised1  polygons: incremental edge fill (faster pixel loop)\n");
 }
 
+/* Elapsed CPU time in seconds since start */
 static double seconds_since(clock_t start) {
     return (double)(clock() - start) / (double)CLOCKS_PER_SEC;
 }
@@ -86,6 +88,7 @@ static void print_report(
     unsigned long long count,
     int dim,
     int compact,
+    int optimised1,
     double gen_s,
     double rast_s,
     double enc_s
@@ -102,6 +105,7 @@ static void print_report(
     printf("-- %-14s %16s\n", "Grid", value);
 
     printf("-- %-14s %16s\n", "Compact", compact ? "yes" : "no");
+    printf("-- %-14s %16d\n", "Optimised", optimised1 ? 1 : 0);
 
     printf("TIME:\n");
     snprintf(value, sizeof(value), "%.3f s", gen_s);
@@ -134,7 +138,8 @@ static int write_output_png(
     return 0;
 }
 
-/* Append one run to the performance log CSV (creates file + header if needed) */
+/* Append one run to the performance log CSV (creates file + header if needed).
+ * optimised: 0/1 for polygons; pass -1 for points/lines (logged as empty/null). */
 static void append_performance_log(
     const char* feature,
     unsigned long long count,
@@ -142,22 +147,84 @@ static void append_performance_log(
     double gen_s,
     double rast_s,
     double enc_s,
-    unsigned long long pixels_on
+    unsigned long long pixels_on,
+    int optimised
 ) {
-
     FILE* f;
     int write_header = 0;
     time_t now = time(NULL);
     struct tm* t = localtime(&now);
     char datetime[32];
+    char line[512];
+    char* old_csv = NULL;
+    long old_size = 0;
+    int need_migrate = 0;
 
-    ensure_output_dir();
-
-    f = fopen(PERF_LOG_PATH, "r");
+    f = fopen(PERF_LOG_PATH, "rb");
     if (!f) {
         write_header = 1;
     } else {
+        if (fgets(line, sizeof(line), f) != NULL) {
+            if (strstr(line, "optimised") == NULL) {
+                need_migrate = 1;
+            }
+        }
+        if (need_migrate) {
+            fseek(f, 0, SEEK_END);
+            old_size = ftell(f);
+            fseek(f, 0, SEEK_SET);
+            if (old_size > 0) {
+                old_csv = (char*)malloc((size_t)old_size + 1);
+                if (old_csv) {
+                    size_t nread = fread(old_csv, 1, (size_t)old_size, f);
+                    old_csv[nread] = '\0';
+                }
+            }
+        }
         fclose(f);
+    }
+
+    if (need_migrate && old_csv) {
+        /* Rewrite existing rows with an empty optimised column */
+        char* row = old_csv;
+        char* next;
+
+        f = fopen(PERF_LOG_PATH, "wb");
+        if (!f) {
+            perror("fopen performance log");
+            free(old_csv);
+            return;
+        }
+        fprintf(f,
+                "datetime,feature,count,grid,gen_s,rast_s,enc_s,total_s,pixels_on,optimised\n");
+        /* skip old header */
+        next = strchr(row, '\n');
+        if (next) {
+            row = next + 1;
+        }
+        while (*row) {
+            next = strchr(row, '\n');
+            if (next) {
+                *next = '\0';
+            }
+            if (row[0] != '\0') {
+                /* strip trailing CR if present */
+                size_t len = strlen(row);
+                if (len > 0 && row[len - 1] == '\r') {
+                    row[len - 1] = '\0';
+                }
+                fprintf(f, "%s,\n", row);
+            }
+            if (!next) {
+                break;
+            }
+            row = next + 1;
+        }
+        fclose(f);
+        free(old_csv);
+        write_header = 0;
+    } else if (old_csv) {
+        free(old_csv);
     }
 
     f = fopen(PERF_LOG_PATH, "a");
@@ -168,7 +235,7 @@ static void append_performance_log(
 
     if (write_header) {
         fprintf(f,
-                "datetime,feature,count,grid,gen_s,rast_s,enc_s,total_s,pixels_on\n");
+                "datetime,feature,count,grid,gen_s,rast_s,enc_s,total_s,pixels_on,optimised\n");
     }
 
     snprintf(datetime, sizeof(datetime),
@@ -176,15 +243,28 @@ static void append_performance_log(
              t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
              t->tm_hour, t->tm_min, t->tm_sec);
 
-    fprintf(f,
-            "%s,%s,%llu,%d,%.6f,%.6f,%.6f,%.6f,%llu\n",
-            datetime,
-            feature,
-            count,
-            dim,
-            gen_s, rast_s, enc_s,
-            gen_s + rast_s + enc_s,
-            pixels_on);
+    if (optimised < 0) {
+        fprintf(f,
+                "%s,%s,%llu,%d,%.6f,%.6f,%.6f,%.6f,%llu,\n",
+                datetime,
+                feature,
+                count,
+                dim,
+                gen_s, rast_s, enc_s,
+                gen_s + rast_s + enc_s,
+                pixels_on);
+    } else {
+        fprintf(f,
+                "%s,%s,%llu,%d,%.6f,%.6f,%.6f,%.6f,%llu,%d\n",
+                datetime,
+                feature,
+                count,
+                dim,
+                gen_s, rast_s, enc_s,
+                gen_s + rast_s + enc_s,
+                pixels_on,
+                optimised);
+    }
 
     fclose(f);
 }
@@ -202,6 +282,7 @@ static int run_points(
     unsigned long long pixels_on = 0;
     char png_path[256];
 
+    /* 1) Generate binary .pts */
     t0 = clock();
     if (generate_points("points/points.pts", count, DEFAULT_SEED,
                         DEFAULT_CLUSTERS, compact) != 0) {
@@ -213,12 +294,14 @@ static int run_points(
         print_points("points/points.pts", "points/points.csv", print_n);
     }
 
+    /* Grid alloc is outside rast_s (not counted as rasterisation) */
     grid = (unsigned char*)calloc((size_t)dim * (size_t)dim, 1);
     if (!grid) {
         fprintf(stderr, "out of memory for grid\n");
         return 1;
     }
 
+    /* 2) Rasterise onto grayscale buffer */
     t0 = clock();
     if (rasterise_points("points/points.pts", grid, dim, dim, NULL, &pixels_on) != 0) {
         free(grid);
@@ -226,6 +309,7 @@ static int run_points(
     }
     rast_s = seconds_since(t0);
 
+    /* 3) Encode PNG */
     t0 = clock();
     if (write_output_png("points", count, dim, compact, grid,
                          png_path, sizeof(png_path)) != 0) {
@@ -235,8 +319,8 @@ static int run_points(
     enc_s = seconds_since(t0);
 
     free(grid);
-    print_report("Points", count, dim, compact, gen_s, rast_s, enc_s);
-    append_performance_log("points", count, dim, gen_s, rast_s, enc_s, pixels_on);
+    print_report("Points", count, dim, compact, 0, gen_s, rast_s, enc_s);
+    append_performance_log("points", count, dim, gen_s, rast_s, enc_s, pixels_on, -1);
     return 0;
 }
 
@@ -253,6 +337,7 @@ static int run_lines(
     unsigned long long pixels_on = 0;
     char png_path[256];
 
+    /* 1) Generate binary .lns */
     t0 = clock();
     if (generate_lines("lines/lines.lns", count, DEFAULT_SEED,
                        DEFAULT_CLUSTERS, compact) != 0) {
@@ -270,6 +355,7 @@ static int run_lines(
         return 1;
     }
 
+    /* 2) Rasterise onto grayscale buffer */
     t0 = clock();
     if (rasterise_lines("lines/lines.lns", grid, dim, dim, NULL, &pixels_on) != 0) {
         free(grid);
@@ -277,6 +363,7 @@ static int run_lines(
     }
     rast_s = seconds_since(t0);
 
+    /* 3) Encode PNG */
     t0 = clock();
     if (write_output_png("lines", count, dim, compact, grid,
                          png_path, sizeof(png_path)) != 0) {
@@ -286,8 +373,8 @@ static int run_lines(
     enc_s = seconds_since(t0);
 
     free(grid);
-    print_report("Lines", count, dim, compact, gen_s, rast_s, enc_s);
-    append_performance_log("lines", count, dim, gen_s, rast_s, enc_s, pixels_on);
+    print_report("Lines", count, dim, compact, 0, gen_s, rast_s, enc_s);
+    append_performance_log("lines", count, dim, gen_s, rast_s, enc_s, pixels_on, -1);
     return 0;
 }
 
@@ -296,7 +383,8 @@ static int run_polygons(
     int dim,
     unsigned long long count,
     unsigned long long print_n,
-    int compact
+    int compact,
+    int optimised1
 ) {
     unsigned char* grid;
     clock_t t0;
@@ -304,6 +392,7 @@ static int run_polygons(
     unsigned long long pixels_on = 0;
     char png_path[256];
 
+    /* 1) Generate binary .pol */
     t0 = clock();
     if (generate_polygons("polygons/polys.pol", count, DEFAULT_SEED,
                           DEFAULT_CLUSTERS, compact) != 0) {
@@ -321,13 +410,16 @@ static int run_polygons(
         return 1;
     }
 
+    /* 2) Rasterise onto grayscale buffer */
     t0 = clock();
-    if (rasterise_polygons("polygons/polys.pol", grid, dim, dim, NULL, &pixels_on) != 0) {
+    if (rasterise_polygons("polygons/polys.pol", grid, dim, dim, NULL,
+                           &pixels_on, optimised1) != 0) {
         free(grid);
         return 1;
     }
     rast_s = seconds_since(t0);
 
+    /* 3) Encode PNG */
     t0 = clock();
     if (write_output_png("polygons", count, dim, compact, grid,
                          png_path, sizeof(png_path)) != 0) {
@@ -337,8 +429,9 @@ static int run_polygons(
     enc_s = seconds_since(t0);
 
     free(grid);
-    print_report("Polygons", count, dim, compact, gen_s, rast_s, enc_s);
-    append_performance_log("polygons", count, dim, gen_s, rast_s, enc_s, pixels_on);
+    print_report("Polygons", count, dim, compact, optimised1, gen_s, rast_s, enc_s);
+    append_performance_log("polygons", count, dim, gen_s, rast_s, enc_s, pixels_on,
+                           optimised1 ? 1 : 0);
     return 0;
 }
 
@@ -349,6 +442,7 @@ int main(int argc, char** argv) {
     unsigned long long count = 100000;
     unsigned long long print_n = 0;
     int compact = 0;
+    int optimised1 = 0;
     int i;
 
     /* Parse command-line options */
@@ -370,6 +464,8 @@ int main(int argc, char** argv) {
             print_n = strtoull(argv[i], NULL, 10);
         } else if (strcmp(argv[i], "--compact") == 0) {
             compact = 1;
+        } else if (strcmp(argv[i], "--optimised1") == 0) {
+            optimised1 = 1;
         } else {
             fprintf(stderr, "unknown option: %s\n", argv[i]);
             print_help();
@@ -382,6 +478,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    /* --type all runs points, then lines, then polygons */
     if (strcmp(type, "points") == 0 || strcmp(type, "all") == 0) {
         if (run_points(dim, count, print_n, compact) != 0) {
             return 1;
@@ -395,7 +492,7 @@ int main(int argc, char** argv) {
     }
 
     if (strcmp(type, "polygons") == 0 || strcmp(type, "all") == 0) {
-        if (run_polygons(dim, count, print_n, compact) != 0) {
+        if (run_polygons(dim, count, print_n, compact, optimised1) != 0) {
             return 1;
         }
     }

@@ -1,7 +1,7 @@
 #include "rasterise_lines.h"
 #include "../common.h"
 
-/* Draw a line segment with Bresenham's algorithm */
+/* Draw a 1-pixel-wide line with Bresenham (integer grid stepping) */
 static void draw_line(unsigned char* grid, int width, int height,
                       int x0, int y0, int x1, int y1,
                       unsigned long long* pixels_on) {
@@ -12,8 +12,8 @@ static void draw_line(unsigned char* grid, int width, int height,
     if (dx < 0) dx = -dx;
     if (dy < 0) dy = -dy;
 
-    sx = (x0 < x1) ? 1 : -1;
-    sy = (y0 < y1) ? 1 : -1;
+    sx = (x0 < x1) ? 1 : -1;  /* step direction in x */
+    sy = (y0 < y1) ? 1 : -1;  /* step direction in y */
     err = dx - dy;
 
     for (;;) {
@@ -23,6 +23,7 @@ static void draw_line(unsigned char* grid, int width, int height,
         }
         {
             int e2 = 2 * err;
+            /* Decide whether to step in x and/or y this iteration */
             if (e2 > -dy) {
                 err = err - dy;
                 x0 = x0 + sx;
@@ -66,6 +67,7 @@ int rasterise_lines(const char* in_path, unsigned char* grid,
     done = 0;
     pixels_on = 0;
 
+    /* Stream lines in batches; project endpoints then stroke */
     while (done < header.count) {
         unsigned long long n = header.count - done;
         unsigned long long i;
@@ -91,6 +93,7 @@ int rasterise_lines(const char* in_path, unsigned char* grid,
     }
 
     fclose(in);
+    /* Optional outputs for the caller */
     if (out_count) *out_count = header.count;
     if (out_pixels_on) *out_pixels_on = pixels_on;
     return 0;

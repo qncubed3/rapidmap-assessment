@@ -16,7 +16,7 @@ int generate_lines(
     struct Line batch[BATCH_SIZE];
     unsigned long long written;
 
-    srand(seed);
+    srand(seed);  /* reproducible features */
 
     cluster_count = load_clusters(clusters_path, clusters, MAX_CLUSTERS);
     if (cluster_count < 1) {
@@ -30,6 +30,7 @@ int generate_lines(
         return 1;
     }
 
+    /* Write header (magic + count + bbox) */
     header.magic = MAGIC_LINES;
     header.count = count;
     header.min_lon = MIN_LON;
@@ -43,6 +44,7 @@ int generate_lines(
         return 1;
     }
 
+    /* Each line: two endpoints near the same cluster (or compact local centre) */
     written = 0;
     while (written < count) {
         unsigned long long n = count - written;

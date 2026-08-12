@@ -31,6 +31,7 @@ int print_points(
         return 1;
     }
 
+    /* Cap dump size to what the file actually holds */
     n = limit;
     if (header.count < n) {
         n = header.count;
@@ -47,6 +48,7 @@ int print_points(
         fprintf(csv, "lon,lat\n");
     }
 
+    /* Stream first n features to CSV or stdout */
     for (i = 0; i < n; i++) {
         struct Point p;
         if (fread(&p, sizeof(p), 1, f) != 1) {

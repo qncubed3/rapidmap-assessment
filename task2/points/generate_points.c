@@ -54,6 +54,7 @@ int generate_points(
             n = BATCH_SIZE;
         }
         for (i = 0; i < n; i++) {
+            /* Pick a town, then sample near it (optionally two-stage / compact) */
             struct Point centre = clusters[rand() % cluster_count];
             if (compact) {
                 struct Point local = point_near(centre, CLUSTER_STD);

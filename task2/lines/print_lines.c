@@ -26,6 +26,7 @@ int print_lines(const char* in_path, const char* csv_path, unsigned long long li
         return 1;
     }
 
+    /* Cap dump size to what the file actually holds */
     n = limit;
     if (header.count < n) {
         n = header.count;
@@ -42,6 +43,7 @@ int print_lines(const char* in_path, const char* csv_path, unsigned long long li
         fprintf(csv, "lon1,lat1,lon2,lat2\n");
     }
 
+    /* Stream first n features to CSV or stdout */
     for (i = 0; i < n; i++) {
         struct Line line;
         if (fread(&line, sizeof(line), 1, f) != 1) {

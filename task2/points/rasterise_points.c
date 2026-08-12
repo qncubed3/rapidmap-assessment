@@ -50,6 +50,7 @@ int rasterise_points(
         }
         for (i = 0; i < n; i++) {
             int x, y;
+            /* Outside the image bbox: skip (no wrapping) */
             if (to_pixel(batch[i].lon, batch[i].lat, header, width, height, &x, &y)) {
                 set_pixel(grid, width, height, x, y, &pixels_on);
             }
@@ -58,6 +59,7 @@ int rasterise_points(
     }
 
     fclose(in);
+    /* Optional outputs for the caller */
     if (out_count) *out_count = header.count;
     if (out_pixels_on) *out_pixels_on = pixels_on;
     return 0;

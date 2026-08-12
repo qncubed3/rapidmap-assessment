@@ -3,6 +3,7 @@
 
 /*
  * Edge function: tells which side of directed edge A->B the point P is on.
+ * We will take y to be in the downwards direction as we are working with images.
  *   > 0  => P is to the left of A->B
  *   = 0  => P is on the line through A and B
  *   < 0  => P is to the right of A->B
@@ -11,20 +12,101 @@ static int edge(int ax, int ay, int bx, int by, int px, int py) {
     return (px - ax) * (by - ay) - (py - ay) * (bx - ax);
 }
 
-/* Fill all pixels covered by the triangle */
-static void fill_triangle(
-    unsigned char* grid, 
+/* Edge as A*x + B*y + C (for incremental stepping) */
+static void compute_edge_coeffs(
+    int ax, int ay, int bx, int by,
+    int* A, int* B, int* C
+) {
+    *A = by - ay;
+    *B = -(bx - ax);
+    *C = -(*A * ax + *B * ay);
+}
+
+/* Original fill: recompute edge() for every pixel in the bbox */
+static void fill_triangle_original(
+    unsigned char* grid,
     int width, int height,
     int x0, int y0, int x1, int y1, int x2, int y2,
+    int min_x, int max_x, int min_y, int max_y,
     unsigned long long* pixels_on
 ) {
+    int x, y;
 
+    for (y = min_y; y <= max_y; y++) {
+        for (x = min_x; x <= max_x; x++) {
+            int w0 = edge(x1, y1, x2, y2, x, y);  /* (x, y) vs edge 1 -> 2 */
+            int w1 = edge(x2, y2, x0, y0, x, y);  /* (x, y) vs edge 2 -> 0 */
+            int w2 = edge(x0, y0, x1, y1, x, y);  /* (x, y) vs edge 0 -> 1 */
+
+            /* If the point is on the left of all three edges, it is inside */
+            if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+                set_pixel(grid, width, height, x, y, pixels_on);
+            }
+        }
+    }
+}
+
+/* Optimised1 fill: step edge values; on each row stop after the filled span ends
+ * (triangles are convex, so inside pixels form one contiguous run per scanline). */
+static void fill_triangle_optimised1(
+    unsigned char* grid,
+    int width, int height,
+    int x0, int y0, int x1, int y1, int x2, int y2,
+    int min_x, int max_x, int min_y, int max_y,
+    unsigned long long* pixels_on
+) {
+    int A0, B0, C0;
+    int A1, B1, C1;
+    int A2, B2, C2;
+    int w0_row, w1_row, w2_row;
+    int x, y;
+
+    compute_edge_coeffs(x1, y1, x2, y2, &A0, &B0, &C0); /* edge 1 -> 2 */
+    compute_edge_coeffs(x2, y2, x0, y0, &A1, &B1, &C1); /* edge 2 -> 0 */
+    compute_edge_coeffs(x0, y0, x1, y1, &A2, &B2, &C2); /* edge 0 -> 1 */
+
+    w0_row = A0 * min_x + B0 * min_y + C0;
+    w1_row = A1 * min_x + B1 * min_y + C1;
+    w2_row = A2 * min_x + B2 * min_y + C2;
+
+    for (y = min_y; y <= max_y; y++) {
+        int w0 = w0_row;
+        int w1 = w1_row;
+        int w2 = w2_row;
+        int drawing = 0;
+
+        for (x = min_x; x <= max_x; x++) {
+            if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+                drawing = 1;
+                set_pixel(grid, width, height, x, y, pixels_on);
+            } else if (drawing) {
+                /* Left the filled span — rest of this row is outside */
+                break;
+            }
+            w0 += A0;
+            w1 += A1;
+            w2 += A2;
+        }
+
+        w0_row += B0;
+        w1_row += B1;
+        w2_row += B2;
+    }
+}
+
+/* Fill all pixels covered by the triangle */
+static void fill_triangle(
+    unsigned char* grid,
+    int width, int height,
+    int x0, int y0, int x1, int y1, int x2, int y2,
+    unsigned long long* pixels_on,
+    int optimised1
+) {
     int min_x = x0;
     int max_x = x0;
     int min_y = y0;
     int max_y = y0;
     int area;
-    int x, y;
 
     /* Bounding box of the triangle */
     if (x1 < min_x) min_x = x1;
@@ -57,30 +139,32 @@ static void fill_triangle(
         y2 = ty;
     }
 
-    /*T est every pixel in the bounding box. */
-    for (y = min_y; y <= max_y; y++) {
-        for (x = min_x; x <= max_x; x++) {
-            int w0 = edge(x1, y1, x2, y2, x, y);  /* (x, y) vs edge 1 -> 2 */
-            int w1 = edge(x2, y2, x0, y0, x, y);  /* (x, y) vs edge 2 -> 0 */
-            int w2 = edge(x0, y0, x1, y1, x, y);  /* (x, y) vs edge 0 -> 1 */
-
-            /* If the point is on the left of all three edges, it is inside the triangle */
-            if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-                set_pixel(grid, width, height, x, y, pixels_on);
-            }
-        }
+    if (optimised1) {
+        fill_triangle_optimised1(
+            grid, width, height,
+            x0, y0, x1, y1, x2, y2,
+            min_x, max_x, min_y, max_y,
+            pixels_on
+        );
+    } else {
+        fill_triangle_original(
+            grid, width, height,
+            x0, y0, x1, y1, x2, y2,
+            min_x, max_x, min_y, max_y,
+            pixels_on
+        );
     }
 }
 
 /* Rasterise triangles from a .pol file onto a grayscale grid */
 int rasterise_polygons(
-    const char* in_path, 
+    const char* in_path,
     unsigned char* grid,
     int width, int height,
     unsigned long long* out_count,
-    unsigned long long* out_pixels_on
+    unsigned long long* out_pixels_on,
+    int optimised1
 ) {
-    
     FILE* in;
     struct Header header;
     struct Triangle batch[BATCH_SIZE];
@@ -136,7 +220,11 @@ int rasterise_polygons(
                 continue;
             }
 
-            fill_triangle(grid, width, height, x0, y0, x1, y1, x2, y2, &pixels_on);
+            fill_triangle(
+                grid, width, height,
+                x0, y0, x1, y1, x2, y2,
+                &pixels_on, optimised1
+            );
         }
 
         done = done + n;

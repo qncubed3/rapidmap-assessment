@@ -31,6 +31,7 @@ int print_polygons(
         return 1;
     }
 
+    /* Cap dump size to what the file actually holds */
     n = limit;
     if (header.count < n) {
         n = header.count;
@@ -47,6 +48,7 @@ int print_polygons(
         fprintf(csv, "lon1,lat1,lon2,lat2,lon3,lat3\n");
     }
 
+    /* Stream first n features to CSV or stdout */
     for (i = 0; i < n; i++) {
         struct Triangle t;
         if (fread(&t, sizeof(t), 1, f) != 1) {

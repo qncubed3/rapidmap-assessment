@@ -1,6 +1,11 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+/*
+ * Shared types and helpers for generate / rasterise / print.
+ * Lon/lat are treated as a flat equirectangular plane over a fixed bbox.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -11,13 +11,13 @@ Set-Location $PSScriptRoot
 $DryRun = $false
 
 # feature types to test (add "polygons" later)
-$Types = @("points", "lines")
+$Types = @("polygons")
 
 # how many features
 $Counts = @(100000, 500000, 1000000, 5000000, 10000000, 50000000, 100000000)
 
 # image size (N x N)
-$Dims = @(4096, 8192, 16384)
+$Dims = @(4096)
 
 # ---------- end of settings ----------
 
@@ -60,4 +60,4 @@ foreach ($type in $Types) {
 
 Write-Host ""
 Write-Host "Finished. Failed: $failed / $total"
-Write-Host "See outputs\performance_log.csv for timings"
+Write-Host "See performance_log.csv for timings"
