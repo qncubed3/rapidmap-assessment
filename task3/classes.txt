@@ -1,0 +1,6 @@
+direction
+give way
+other
+pedestrian
+speed
+stop

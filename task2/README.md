@@ -40,6 +40,8 @@ GPU was not used (CPU-only rasteriser).
 - Batching:
   - Features are streamed in batches of `BATCH_SIZE` (10000) so we do not hold all features in RAM.
 
+
+
 ## Build and run
 
 Requires **gcc** (MinGW on Windows) and `mingw32-make`.
@@ -70,13 +72,17 @@ run.exe --type polygons --dim 16384 --count 1000 --optimised1
 run.exe --type all --dim 4096 --count 100000 --compact
 ```
 
+
+
 ### Benchmark matrix
 
 Edit the lists in `run_matrix.ps1`, then:
 
 ```powershell
-run_matrix.ps1
+./run_matrix.ps1
 ```
+
+
 
 ## Analysis
 
@@ -87,6 +93,8 @@ run_matrix.ps1
 #TODO
 
 ## Debrief questions
+
+
 
 ### Where does this break down, and what would we change?
 

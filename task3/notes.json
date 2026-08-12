@@ -1,0 +1,33 @@
+{
+  "categories": [
+    {
+      "id": 0,
+      "name": "direction"
+    },
+    {
+      "id": 1,
+      "name": "give way"
+    },
+    {
+      "id": 2,
+      "name": "other"
+    },
+    {
+      "id": 3,
+      "name": "pedestrian"
+    },
+    {
+      "id": 4,
+      "name": "speed"
+    },
+    {
+      "id": 5,
+      "name": "stop"
+    }
+  ],
+  "info": {
+    "year": 2026,
+    "version": "1.0",
+    "contributor": "Label Studio"
+  }
+}

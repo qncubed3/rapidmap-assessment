@@ -46,6 +46,15 @@ task2/points/points.csv
 task2/lines/lines.csv
 task2/polygons/polys.csv
 
+# Task 3 ignore training data
+task3/data.zip
+task3/images/
+
+# Local venv / caches
+task3/.venv/
+task3/__pycache__/
+task3/.ipynb_checkpoints/
+
 # Early prototype (local only; organised C tree under points/lines/polygons is the deliverable)
 task2/initial_trial/
 
