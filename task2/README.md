@@ -86,11 +86,31 @@ Edit the lists in `run_matrix.ps1`, then:
 
 ## Analysis
 
-`analyse.ipynb` loads `performance_log.csv` and plots rasterisation time vs count (and the optimised vs baseline box plot).
+`analyse.ipynb` loads `performance_log.csv` / `performance_log_poly.csv` and plots rasterisation time vs count (and the optimised vs baseline box plot).
+
+### Points
+
+![Points rasterisation time vs count](assets/points_performance.png)
+
+### Lines
+
+![Lines rasterisation time vs count](assets/line_performance.png)
+
+### Polygons
+
+![Polygons rasterisation time vs count](assets/polygon_performance.png)
+
+### Optimised vs baseline
+
+![Optimised vs baseline polygon fill](assets/optimised_comparison.png)
 
 ## Effect of synthetic data shape on timings
 
-#TODO
+An experiement was run on 1,000,000 polygons (triangles) on a 8192x8192 grid. Several runs were performed with compact mode on, meaning that the triangles generated were of much smaller scale, with their vertices clustered closer together. The rasterisation time was consistently 1.7 seconds.
+
+ Several runs were also donw with compact mode off, meaning the size of triangles were much larger - their vertices could be distributed anywhere around the central cluster point. This raised the rasterisation time significantly to around 53 seconds.
+
+This checks out, as the cluster standard deviation is 0.15 degrees, while the compact standard deviation is 0.02 degrees, roughly 7 times more, equating to roughly 50 times more pixels, explaining the scale factor we see in the timings.
 
 ## Debrief questions
 
