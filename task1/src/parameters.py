@@ -24,35 +24,30 @@ GDA94_TO_GDA2020 = HelmertParams(
 
 
 # ITRF2020 -> GDA2020
-# Source: GDA2020 Technical Manual v1.8, Table 3.5
+# Source: GDA2020 Technical Manual v1.8, Table 3.5 (as published)
 # Reference epoch t0 = 2020.0
 #
-# NOTE: All parameter signs are negated from the Table 3.5 values.
-# Table 3.5 is a combination of IERS-published ITRF2020->ITRF2014 parameters
-# (Table 3.4) and the Australian PMM ITRF2014->GDA2020 parameters (Table 3.3).
-# When the combined parameters are used with the Australian-convention Helmert
-# formula (as implemented in helmert14), the as-published Table 3.5 parameters
-# describe the inverse transformation (GDA2020->ITRF2020). Negating all
-# parameters (per Section 2.2.1 of the manual) corrects the direction.
-# Validated against the manual's own example 3.5.1 to within 0.3 mm.
+# Agrees with pyproj EPSG:9988 → EPSG:7842. Disagrees with the
+# worked-example GDA2020 coordinates in §3.5.1 by ~0.53 m.
+# Reverse the transformation by negating all parameters.
 ITRF2020_TO_GDA2020 = HelmertParams(
-    tx=0.0014,
-    ty=0.0014,
-    tz=-0.0024,
+    tx=-0.0014,
+    ty=-0.0014,
+    tz=0.0024,
 
     rx=0.0,
     ry=0.0,
     rz=0.0,
 
-    sc=0.00042,
+    sc=-0.00042,
 
     dtx=0.0,
-    dty=0.0001,
-    dtz=-0.0002,
+    dty=-0.0001,
+    dtz=0.0002,
 
-    drx=-0.00150379,
-    dry=-0.00118346,
-    drz=-0.00120716,
+    drx=0.00150379,
+    dry=0.00118346,
+    drz=0.00120716,
 
     dsc=0.0,
 )

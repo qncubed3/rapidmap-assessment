@@ -14,10 +14,14 @@ $DryRun = $false
 $Types = @("polygons")
 
 # how many features
-$Counts = @(100000, 500000, 1000000, 5000000, 10000000, 50000000, 100000000)
+$Counts = @(100000, 500000, 1000000, 5000000, 10000000)
 
 # image size (N x N)
 $Dims = @(4096, 8192, 16384)
+
+# extra flags passed to every run.exe (same as solo runs)
+$Compact = $false       # --compact
+$Optimised1 = $true    # --optimised1 (polygons only; harmless if unused)
 
 # ---------- end of settings ----------
 
@@ -42,13 +46,18 @@ foreach ($type in $Types) {
     foreach ($count in $Counts) {
         foreach ($dim in $Dims) {
             $n = $n + 1
-            Write-Host "==== [$n / $total] type=$type count=$count dim=$dim ===="
+            $extra = @()
+            if ($Compact) { $extra += "--compact" }
+            if ($Optimised1) { $extra += "--optimised1" }
+            $extraText = if ($extra.Count -gt 0) { " " + ($extra -join " ") } else { "" }
+
+            Write-Host "==== [$n / $total] type=$type count=$count dim=$dim$extraText ===="
 
             if ($DryRun) {
-                Write-Host ".\run.exe --type $type --dim $dim --count $count"
+                Write-Host ".\run.exe --type $type --dim $dim --count $count$extraText"
             }
             else {
-                .\run.exe --type $type --dim $dim --count $count
+                & .\run.exe --type $type --dim $dim --count $count @extra
                 if ($LASTEXITCODE -ne 0) {
                     Write-Host "FAILED (exit code $LASTEXITCODE)"
                     $failed = $failed + 1

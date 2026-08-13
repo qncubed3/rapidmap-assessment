@@ -85,18 +85,52 @@ def _negate(params):
     )
 
 
-if __name__ == "__main__":
-    # Flinders Peak MGA2020 Zone 55 (Table C-1)
-    EASTING = 273741.297
-    NORTHING = 5796489.777
-
-    lat, lon = mga2020_to_wgs84(EASTING, NORTHING)
-    print(lat, lon)
-
+def explore_itrf2020_to_gda2020_cart():
+    """Compare ITRF2020 -> GDA2020 Cartesian for MOBS (§3.5.1) at epoch 2024.5."""
     from pyproj import Transformer
-    from .utils import distance_metres_geographic
 
-    transformer = Transformer.from_crs("EPSG:7855", "EPSG:10606", always_xy=True)
-    lon_pyproj, lat_pyproj = transformer.transform(EASTING, NORTHING)
-    print(lat_pyproj, lon_pyproj)
-    print(distance_metres_geographic(lat, lon, lat_pyproj, lon_pyproj))
+    xyz_itrf2020 = [-4130636.582, 2894953.120, -3890530.446]
+    xyz_gda2020_expected = [-4130636.759, 2894953.142, -3890530.249]
+
+    xyz_ours = helmert14(xyz_itrf2020, ITRF2020_TO_GDA2020, t=2024.5, t0=_T0)
+    xyz_negated = helmert14(xyz_itrf2020, _negate(ITRF2020_TO_GDA2020), t=2024.5, t0=_T0)
+
+    transformer = Transformer.from_crs("EPSG:9988", "EPSG:7842", always_xy=True)
+    xyz_pyproj = transformer.transform(*xyz_itrf2020, 2024.5)[:3]
+
+    print("ITRF2020 -> GDA2020 cart")
+    print("expected", *xyz_gda2020_expected)
+    print("ours    ", *xyz_ours)
+    print("negated ", *xyz_negated)
+    print("pyproj  ", *xyz_pyproj)
+
+
+def explore_itrf2020_to_mga2020():
+    """Compare ITRF2020 Cartesian -> MGA2020 Zone 55 for MOBS at epoch 2024.5."""
+    from pyproj import Transformer
+
+    xyz_itrf2020 = [-4130636.582, 2894953.120, -3890530.446]
+    epoch = 2024.5
+    zone = 55
+
+    def to_mga(params):
+        xyz_gda2020 = helmert14(xyz_itrf2020, params, t=epoch, t0=_T0)
+        lat, lon, _ = cartesian_to_geographic(xyz_gda2020)
+        return geographic_to_mga2020(lat, lon, zone=zone)
+
+    e_ours, n_ours, z_ours = to_mga(ITRF2020_TO_GDA2020)
+    e_negated, n_negated, z_negated = to_mga(_negate(ITRF2020_TO_GDA2020))
+
+    transformer = Transformer.from_crs("EPSG:9988", "EPSG:7855", always_xy=True)
+    e_pyproj, n_pyproj = transformer.transform(*xyz_itrf2020, epoch)[:2]
+
+    print("ITRF2020 -> MGA2020")
+    print("ours    ", e_ours, n_ours, z_ours)
+    print("negated ", e_negated, n_negated, z_negated)
+    print("pyproj  ", e_pyproj, n_pyproj, zone)
+
+
+if __name__ == "__main__":
+    explore_itrf2020_to_gda2020_cart()
+    print()
+    explore_itrf2020_to_mga2020()

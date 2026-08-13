@@ -4,7 +4,7 @@ Tests for Helmert coordinate transformations.
 Verification data taken from the GDA2020 Technical Manual v1.8:
   - Section 3.1.1, Example: GDA94 -> GDA2020, Alice Springs (ALIC)
   - Section 3.3.1, Example: ITRF2014 -> GDA2020, Alice Springs at epoch 2018.0
-  - Section 3.5.1, Example: ITRF2020/WGS84 -> GDA2020, Melbourne (MOBS) at epoch 2024.5
+  - Table 3.5 / pyproj EPSG:9988 → EPSG:7842: ITRF2020 -> GDA2020, Melbourne (MOBS) at epoch 2024.5
 """
 
 import pytest
@@ -48,24 +48,31 @@ class Test_ITRF2014_to_GDA2020:
 class Test_ITRF2020_to_GDA2020:
     """
     WGS 84 (G2296) / ITRF2020 -> GDA2020 14-parameter transformation.
-    Source: GDA2020 Technical Manual v1.8, Section 3.5.1.
+    Source: GDA2020 Technical Manual v1.8, Table 3.5 (as published).
     Reference epoch t0 = 2020.0.
     WGS 84 observation on 14 Feb 2024 is coincident with ITRF2020 at mid-year 2024 (t = 2024.5).
+
+    Truth is ITRF2020_TO_GDA2020 (Table 3.5 as published), which agrees with pyproj
+    EPSG:9988 → EPSG:7842. The §3.5.1 worked-example GDA2020 coordinates
+    differ by ~0.53 m and are not used here.
     """
 
     # ITRF2020 at epoch 2024.5, Melbourne (MOBS)
-    XYZ_itrf2020         = [-4130636.582, 2894953.120, -3890530.446]
-    XYZ_gda2020_expected = [-4130636.759, 2894953.142, -3890530.249]
+    XYZ_itrf2020 = [-4130636.582, 2894953.120, -3890530.446]
 
     def test_helmert14_at_2024_5(self):
+        from pyproj import Transformer
+
         result = helmert14(self.XYZ_itrf2020, ITRF2020_TO_GDA2020, t=2024.5, t0=2020.0)
-        assert result == pytest.approx(self.XYZ_gda2020_expected, abs=1e-3)
+        x, y, z, _ = Transformer.from_crs("EPSG:9988", "EPSG:7842", always_xy=True).transform(
+            *self.XYZ_itrf2020, 2024.5
+        )
+        assert result == pytest.approx((x, y, z), abs=1e-6)
 
     def test_pyproj_explicit_pipeline_matches_manual(self):
         """
-        pyproj reproduces §3.5.1 when given an explicit 14-param Helmert
-        (same parameters / convention as our implementation).
-        Naive EPSG:10604→7842 does not — that path is static/noop.
+        pyproj reproduces our Helmert when given the same 14-param pipeline
+        (as-published Table 3.5, coordinate-frame convention).
         """
         from pyproj import Transformer
 
@@ -80,7 +87,5 @@ class Test_ITRF2020_to_GDA2020:
         x, y, z, _ = Transformer.from_pipeline(pipeline).transform(
             *self.XYZ_itrf2020, 2024.5
         )
-        assert (x, y, z) == pytest.approx(self.XYZ_gda2020_expected, abs=1e-3)
-
         ours = helmert14(self.XYZ_itrf2020, ITRF2020_TO_GDA2020, t=2024.5, t0=2020.0)
         assert (x, y, z) == pytest.approx(ours, abs=1e-6)
